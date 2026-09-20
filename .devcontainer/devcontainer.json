@@ -14,10 +14,7 @@
     }
   },
   "remoteUser": "vscode",
-  "features": {
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/postgresql-client:1": {}
-  },
+  "features": {},
   "forwardPorts": [5432, 8081],
   "postCreateCommand": "echo 'Dev Container ready. Use psql to connect to PostgreSQL via Docker Compose.'"
 }
