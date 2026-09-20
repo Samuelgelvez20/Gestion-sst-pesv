@@ -1,16 +1,12 @@
 -- ============================================================================
 -- SST-PESV: Consultas SQL Avanzadas (25)
--- Sesion 2.4 - Consultas avanzadas
+-- Sesion 2.4-2.5 - Consultas avanzadas (completadas en sesion 2.5)
 -- Archivo: sql/03_queries/avanzadas.sql
 -- PostgreSQL 16
 -- ============================================================================
 -- Consultas C.3.1-C.3.25 segun Examen.md §3
 -- Cada consulta conserva su identificador real del examen.
---
--- PENDIENTE (3 consultas - requieren vistas/materialized views futuras):
---   C.3.10 - requiere vistas de resumen (sesion 2.5)
---   C.3.22 - requiere vm_template_pesv_docs_summary, vm_template_sst_docs_summary
---   C.3.24 - requiere vistas de resumen SST vs PESV (sesion 2.5)
+-- Todas las 25 consultas estan implementadas y verificadas.
 -- ============================================================================
 
 -- ============================================================================
@@ -180,10 +176,18 @@ WHERE rn = 1
 ORDER BY organizacion;
 
 -- ============================================================================
--- C.3.10 — PENDIENTE — Porcentaje de documentos finalizados vs total
---           (usando vistas de resumen)
--- Requiere: vistas de resumen de documentos (sesion 2.5)
+-- C.3.10 - Porcentaje de documentos finalizados vs total
+--           (usando vista materializada de resumen)
+-- Fuente: Examen.md §3.10
+-- Tecnicas: Consulta sobre vista materializada
+-- Requiere: vm_compliance_summary (sesion 2.5)
 -- ============================================================================
+SELECT organizacion,
+       total_documentos,
+       documentos_finalizados,
+       porcentaje_cumplimiento
+FROM vm_compliance_summary
+ORDER BY porcentaje_cumplimiento DESC NULLS LAST;
 
 -- ============================================================================
 -- C.3.11 - Organizaciones con cumplimiento bajo el promedio
@@ -449,11 +453,22 @@ GROUP BY t.id, t.name
 ORDER BY ultima_actualizacion_plantillas DESC NULLS LAST;
 
 -- ============================================================================
--- C.3.22 — PENDIENTE — Organizaciones con registros documentales pendientes
+-- C.3.22 - Organizaciones con registros documentales pendientes
 --           (usando vistas materializadas)
+-- Fuente: Examen.md §3.22
+-- Tecnicas: Consulta sobre vistas materializadas
 -- Requiere: vm_template_pesv_docs_summary, vm_template_sst_docs_summary
---           (materialized views de la sesion 2.5)
 -- ============================================================================
+SELECT COALESCE(sst.organizacion, pesv.organizacion) AS organizacion,
+       sst.documentos_pendientes AS pendientes_sst,
+       pesv.documentos_pendientes AS pendientes_pesv,
+       COALESCE(sst.documentos_pendientes, 0) + COALESCE(pesv.documentos_pendientes, 0) AS total_pendientes
+FROM vm_template_sst_docs_summary sst
+FULL OUTER JOIN vm_template_pesv_docs_summary pesv
+    ON sst.tenant_id = pesv.tenant_id
+WHERE COALESCE(sst.documentos_pendientes, 0) > 0
+   OR COALESCE(pesv.documentos_pendientes, 0) > 0
+ORDER BY total_pendientes DESC, organizacion;
 
 -- ============================================================================
 -- C.3.23 - Informe consolidado: total, finalizados, borrador, no iniciados,
@@ -478,28 +493,32 @@ GROUP BY t.id, t.name
 ORDER BY t.name;
 
 -- ============================================================================
--- C.3.24 — PENDIENTE — Comparar % cumplimiento SST vs PESV, diferencia > valor
---           Requiere: vistas de resumen SST y PESV (sesion 2.5)
+-- C.3.24 - Comparar % cumplimiento SST vs PESV, diferencia > valor
+-- Fuente: Examen.md §3.24
+-- Tecnicas: Diferencia absoluta entre vistas materializadas
+-- Requiere: vm_template_sst_docs_summary, vm_template_pesv_docs_summary
 -- ============================================================================
+SELECT COALESCE(sst.organizacion, pesv.organizacion) AS organizacion,
+       sst.porcentaje_cumplimiento AS cumplimiento_sst,
+       pesv.porcentaje_cumplimiento AS cumplimiento_pesv,
+       ROUND(ABS(
+           COALESCE(sst.porcentaje_cumplimiento, 0) -
+           COALESCE(pesv.porcentaje_cumplimiento, 0)
+       ), 2) AS diferencia_absoluta
+FROM vm_template_sst_docs_summary sst
+FULL OUTER JOIN vm_template_pesv_docs_summary pesv
+    ON sst.tenant_id = pesv.tenant_id
+WHERE ABS(
+    COALESCE(sst.porcentaje_cumplimiento, 0) -
+    COALESCE(pesv.porcentaje_cumplimiento, 0)
+) > 0
+ORDER BY diferencia_absoluta DESC, organizacion;
 
 -- ============================================================================
 -- C.3.25 - Vista que consolide personas, modulos, plantillas y sistemas
 --           por organizacion
 -- Fuente: Examen.md §3.25
 -- Tecnicas: Multiples COUNT + GROUP BY
+-- Definicion de la vista: sql/04_views/001_views.sql
 -- ============================================================================
-CREATE OR REPLACE VIEW vw_tenant_summary AS
-SELECT t.id AS tenant_id,
-       t.name AS organizacion,
-       COUNT(DISTINCT p.id) AS total_personas,
-       COUNT(DISTINCT tm.id) AS total_modulos,
-       COUNT(DISTINCT tt.id) AS total_plantillas,
-       COUNT(DISTINCT ts.id) AS total_sistemas
-FROM tenants t
-LEFT JOIN persons p ON t.id = p.tenant_id
-LEFT JOIN tenant_modules tm ON t.id = tm.tenant_id
-LEFT JOIN tenanttemplates tt ON t.id = tt.tenant_id
-LEFT JOIN tenantsystems ts ON t.id = ts.tenant_id
-GROUP BY t.id, t.name;
-
 SELECT * FROM vw_tenant_summary ORDER BY organizacion;
