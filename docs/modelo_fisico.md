@@ -226,7 +226,7 @@ Todas las tablas usan `integer GENERATED ALWAYS AS IDENTITY` como PK surrogate.
 
 | Relación | ON DELETE | ON UPDATE | Justificación |
 |---|---|---|---|
-| `persons.tenant_id` → `tenants.id` | CASCADE | NO ACTION | Si se elimina un tenant, se eliminan sus personas (Trigger 8 impide eliminar tenant con personas, pero CASCADE es seguro) |
+| `persons.tenant_id` → `tenants.id` | RESTRICT | NO ACTION | No se puede eliminar un tenant con personas asociadas (Trigger 8 también lo impide; RESTRICT proporciona protección declarativa en el esquema) |
 | `persons.position_id` → `positions.id` | SET NULL | NO ACTION | Si se elimina un cargo, la persona queda sin cargo (no se elimina la persona) |
 | `positions.tenant_id` → `tenants.id` | CASCADE | NO ACTION | Si se elimina un tenant, se eliminan sus cargos |
 | `tenant_modules.tenant_id` → `tenants.id` | CASCADE | NO ACTION | Si se elimina un tenant, se eliminan sus módulos |
@@ -334,9 +334,8 @@ tenant_id en cada tabla tenant-scoped
 | `tenant_modules` | `(tenant_id, module_id)` | `uq_tenant_modules_tenant_module` | Un módulo no puede estar asignado dos veces al mismo tenant (Trigger 4 lo impide) |
 | `tenantsystems` | `(tenant_id, type_system_sst_id)` | `uq_tenantsystems_tenant_system` | Un sistema SST no puede estar habilitado dos veces para el mismo tenant (Trigger 9 lo impide) |
 | `tenanttemplates` | `(tenant_id, template_id, type_system_sst_id, phva_stage_id)` | `uq_tenanttemplates_assignment` | Una plantilla no puede estar asignada dos veces con la misma configuración |
-| `documents` | `(tenanttemplate_id)` | `uq_documents_tenanttemplate` | Cada asignación de plantilla genera como máximo un documento (si se asume 1:1) |
 
-**Nota sobre `documents`:** La relación entre `tenanttemplates` y `documents` podría ser 1:N si una plantilla genera múltiples documentos. El Examen.md no lo especifica claramente. Se propone UNIQUE como candidato, pero debe evaluarse durante la implementación.
+**NOTA — A-04 AMBIGUA (Sesión 2.1):** La relación `documents` ↔ `tenanttemplates` está marcada como AMBIGUA. No se implementa UNIQUE en `documents(tenanttemplate_id)` para no imponer artificialmente 1:1 mientras la cardinalidad siga sin estar determinada. La ausencia de UNIQUE preserva la posibilidad de 1:N. Decisión provisional de diseño físico.
 
 ### 6.3 CHECK
 
