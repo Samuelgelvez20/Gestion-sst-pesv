@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: sst_pesv_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sst_pesv}
+      POSTGRES_USER: ${POSTGRES_USER:-sst_pesv_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - sst_pesv_postgres_data:/var/lib/postgresql/data
+    networks:
+      - sst_pesv_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sst_pesv_user} -d ${POSTGRES_DB:-sst_pesv}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:8.13
+    container_name: sst_pesv_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-change_me}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-8081}:80"
+    volumes:
+      - sst_pesv_pgadmin_data:/var/lib/pgadmin
+    networks:
+      - sst_pesv_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  sst_pesv_network:
+    driver: bridge
+    name: sst_pesv_network
+
+volumes:
+  sst_pesv_postgres_data:
+    name: sst_pesv_postgres_data
+  sst_pesv_pgadmin_data:
+    name: sst_pesv_pgadmin_data
