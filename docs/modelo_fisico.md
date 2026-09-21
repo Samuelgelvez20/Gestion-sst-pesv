@@ -4,6 +4,10 @@
 > Sesión 1.4 — Preparación para DDL.
 > **NO contiene DDL.** Solo documenta decisiones listas para traducirse a `CREATE TABLE`, `CREATE INDEX`, etc.
 
+![Modelo físico SST-PESV](images/modelo_fisico.svg)
+
+> Diagrama físico: tipos PostgreSQL 16 reales por columna (`integer GENERATED ALWAYS AS IDENTITY` en todas las PK, `NOT NULL` donde corresponde). Acciones `ON DELETE` documentadas en §4.2, índices en §7. `tenanttemplates.modified_by` refleja la migración `005_alter_tenanttemplates.sql` (Sesión 3.4).
+
 ---
 
 ## 1. Alcance

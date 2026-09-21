@@ -4,6 +4,10 @@
 >
 > Solo análisis, inventario y trazabilidad. Sin DDL, sin diagramas definitivos.
 
+![Modelo conceptual SST-PESV](images/modelo_conceptual.svg)
+
+> Diagrama conceptual: entidades y relaciones del sistema, sin tipos de datos ni cardinalidades técnicas. `evaluations` y `audit_log` (naranja punteado) están marcadas AMBIGUA porque su evidencia en `Examen.md` es descriptiva, no operativa — no aparecen en ninguna consulta, procedimiento, función ni trigger (ver §3.4 y §4 de este documento).
+
 ---
 
 ## 1. Verificación grep — Entidades sospechosas

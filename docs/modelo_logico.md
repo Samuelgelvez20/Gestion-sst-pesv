@@ -3,6 +3,10 @@
 > Definición de tablas, columnas, tipos de datos, PK, FK y restricciones.
 > Sin DDL. Solo diseño lógico del esquema multi-tenant.
 
+![Modelo lógico SST-PESV](images/modelo_logico.svg)
+
+> Diagrama lógico: las 19 tablas con PK, FK y columnas (tipos genéricos: `serial`, `varchar`, `timestamptz`), sin detalle de implementación PostgreSQL específica. `evaluations` mantiene su clasificación AMBIGUA (§4.7); `documents.tenanttemplate_id` no tiene `UNIQUE` por la ambigüedad A-04 sobre la cardinalidad con `tenanttemplates`.
+
 ---
 
 ## 1. Convenciones
