@@ -249,6 +249,8 @@ El Dev Container incluye cliente `psql`, Git y herramientas básicas. PostgreSQL
 | Reinicio limpio (borra datos) | `docker compose down -v` |
 | Conexión interactiva psql | `docker exec -it sst_pesv_postgres psql -U sst_pesv_user -d sst_pesv` |
 
+> **⚠️ Nota sobre reinicialización:** Si detienes el proyecto con `docker compose down` (sin `-v`), el volumen de datos persiste. Si vuelves a levantarlo y a ejecutar el bucle de inicialización, los scripts de esquema fallarán con errores tipo *"relation already exists"* porque las tablas ya existen. Para una reinicialización completa desde cero, usa `docker compose down -v` (esto borra todos los datos). Si solo quieres pausar y reanudar sin perder datos, usa `docker compose down` y al reanudar con `docker compose up -d` **no** vuelvas a correr el bucle de inicialización — la base ya está poblada.
+
 ## Estructura del repositorio
 
 ```
