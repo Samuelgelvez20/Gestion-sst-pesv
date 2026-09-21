@@ -1,11 +1,11 @@
 -- ============================================================================
 -- SST-PESV: Procedimientos almacenados (15 procedimientos)
 -- Sesión 3.3 — Programabilidad
--- Archivo: sql/05_programabilidad/002_procedures.sql
+-- Archivo: sql/06_procedures/001_procedures.sql
 -- PostgreSQL 16
 -- ============================================================================
 -- Este archivo crea los 15 procedimientos exigidos por Examen.md §5.
--- No modificar funciones de Sesión 3.2 (001_functions.sql).
+-- No modificar funciones de Sesión 3.2 (sql/05_functions/001_functions.sql).
 -- No modificar tablas, constraints, seed, vistas, MVs ni consultas.
 -- ============================================================================
 

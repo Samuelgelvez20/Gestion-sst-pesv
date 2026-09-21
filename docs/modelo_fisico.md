@@ -413,14 +413,14 @@ Todas las PK `integer GENERATED ALWAYS AS IDENTITY` crean un índice B-tree impl
 
 ### 8.2 Tabla de auditoría
 
-**AMBIGUA — pendiente de decisión.**
+**RESUELTA — Sesión 3.4.**
 
 El Examen.md declara:
 - Trigger 12: "registre en una tabla de auditoría cualquier modificación realizada sobre los datos principales de una organización"
 - Trigger 13: "almacene el valor anterior y el nuevo valor cuando se modifique el estado de una organización"
 - Trigger 14: "registre la fecha y el usuario responsable cuando una plantilla sea modificada"
 
-**Estructura propuesta (DECISIÓN DE DISEÑO, no requisito explícito):**
+**Decisión: `audit_log` es la tabla de auditoría. Estructura actual confirmada.**
 
 | Columna | Tipo | NOT NULL | Descripción |
 |---|---|---|---|
@@ -431,10 +431,14 @@ El Examen.md declara:
 | `action` | `varchar(10)` | SÍ | INSERT, UPDATE, DELETE |
 | `old_values` | `jsonb` | NO | Valores anteriores |
 | `new_values` | `jsonb` | NO | Valores nuevos |
-| `changed_at` | `timestamptz` | SÍ | Fecha/hora del cambio |
+| `changed_at` | `timestamptz` | SÍ | Fecha/hora del cambio (DEFAULT now()) |
 | `changed_by` | `varchar(100)` | NO | Usuario que realizó el cambio |
 
-**Pendiente:** Definir si `audit_log` aplica solo a `tenants` o a todas las tablas tenant-scoped. El Trigger 12 dice "datos principales de una organización", lo que sugiere solo `tenants`. Pero el Trigger 14 menciona `tenanttemplates`.
+**Mecanismo `changed_by`:** `current_setting('app.current_user', true)`. No existe tabla `users` dentro del alcance (INC-01). El usuario se configura por sesión con `SET app."current_user" = '...'`.
+
+**T12 vs T13:** Son dos triggers independientes que generan dos entradas independientes. T12 registra la modificación completa de `tenants`. T13 se enfoca específicamente en cambios de `is_active` con `WHEN (OLD.is_active IS DISTINCT FROM NEW.is_active)`.
+
+**T14 sobre `tenanttemplates`:** No es sobre `audit_log`. T14 registra `modified_by` directamente en la tabla `tenanttemplates` mediante una columna adicional incorporada en `005_alter_tenanttemplates.sql`.
 
 ---
 
@@ -447,9 +451,9 @@ El Examen.md menciona:
 - §4 Objetivo 16: "mecanismos básicos de concurrencia"
 - Trigger 15: "elimine o marque como inactivos los bloqueos de edición vencidos almacenados en `editing_locks`"
 
-### 9.2 Estructura propuesta
+### 9.2 Estructura confirmada
 
-**AMBIGUA — DECISIÓN DE DISEÑO, no requisito explícito.**
+**RESUELTA — Sesión 3.4.**
 
 | Columna | Tipo | NOT NULL | Descripción |
 |---|---|---|---|
@@ -458,14 +462,10 @@ El Examen.md menciona:
 | `resource_type` | `varchar(50)` | SÍ | Tipo de recurso bloqueado (ej: 'tenanttemplate', 'document') |
 | `resource_id` | `integer` | SÍ | ID del recurso bloqueado |
 | `locked_by` | `varchar(100)` | SÍ | Identificador del usuario |
-| `locked_at` | `timestamptz` | SÍ | Fecha/hora del bloqueo |
+| `locked_at` | `timestamptz` | SÍ | Fecha/hora del bloqueo (DEFAULT now()) |
 | `expires_at` | `timestamptz` | SÍ | Fecha/hora de expiración |
 
-**Pendiente:**
-- Mecanismo exacto de bloqueo (`SELECT ... FOR UPDATE` vs tabla de bloqueos)
-- Duración del bloqueo
-- Si se usa `NOW() + interval '30 minutes'` o similar
-- Limpieza periódica vs on-demand
+**Mecanismo de limpieza (T15):** Los locks expirados se eliminan físicamente mediante `DELETE FROM editing_locks WHERE expires_at < CURRENT_TIMESTAMP`. No existe columna `active`. La limpieza se ejecuta en `AFTER INSERT OR UPDATE` sobre `editing_locks`. Los locks con `expires_at IS NULL` no se consideran expirados.
 
 ---
 
@@ -474,8 +474,8 @@ El Examen.md menciona:
 | ID | Tipo | Descripción | Fuente | Impacto |
 |---|---|---|---|---|
 | A-01 | AMBIGUA | `evaluations`: evidencia descriptiva sin uso operativo | Examen.md §1, §2, §4, §5 | Podría no implementarse |
-| A-02 | AMBIGUA | `audit_log`: estructura exacta no definida | Examen.md Triggers 12, 13, 14 | Podría ser solo para `tenants` o genérica |
-| A-03 | AMBIGUA | `editing_locks`: mecanismo exacto de bloqueo | Examen.md §5, Trigger 15 | Podría usar `SELECT ... FOR UPDATE` en lugar de tabla separada |
+| A-02 | **RESUELTA** | `audit_log`: estructura y mecanismo definidos (Sesión 3.4) | Examen.md Triggers 12, 13, 14 | T12/T13 usan `audit_log`; T14 usa `modified_by` en `tenanttemplates` |
+| A-03 | **RESUELTA** | `editing_locks`: limpieza por DELETE de locks vencidos (Sesión 3.4) | Examen.md §5, Trigger 15 | T15 ejecuta `DELETE WHERE expires_at < CURRENT_TIMESTAMP` |
 | A-04 | AMBIGUA | `documents`: relación 1:1 o 1:N con `tenanttemplates` | Examen.md consultas 3.10, 3.23 | Afecta UNIQUE constraint |
 | A-05 | DECISIÓN | `persons` → `positions`: N:1 (una persona tiene un cargo) | Examen.md Trigger 6: "asociada a un cargo" (singular) | Ya adoptado en modelo lógico |
 | A-06 | DECISIÓN | `persons` → `tenants`: N:1 (una persona pertenece a un tenant) | Examen.md Procedimiento 8: "trasladar" (mover, no copiar) | Ya adoptado en modelo lógico |
@@ -544,4 +544,4 @@ Las únicas apariciones son en la §12 (este bloque), que documenta la incidenci
 
 ---
 
-*Última actualización: Sesión 1.4 — Modelo físico*
+*Última actualización: Sesión 3.4 — Modelo físico (Triggers implementados, A-02/A-03 resueltos)*

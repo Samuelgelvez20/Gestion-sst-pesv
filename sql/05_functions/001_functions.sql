@@ -1,7 +1,7 @@
 -- ============================================================================
 -- SST-PESV: Funciones almacenadas (8 funciones)
 -- Sesión 3.2 — Programabilidad
--- Archivo: sql/05_programabilidad/001_functions.sql
+-- Archivo: sql/05_functions/001_functions.sql
 -- PostgreSQL 16
 -- ============================================================================
 -- Este archivo crea las 8 funciones exigidas por Examen.md §6.
